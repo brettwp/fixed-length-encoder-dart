@@ -1,8 +1,8 @@
 name: fixed_length_encoder
-description: A new Flutter package project.
+description: A one-to-one mapping function between integers and fixed length strings.
 version: 0.0.1
-author:
-homepage:
+author: Brett Pontarelli (brett@paperyfrog.com)
+homepage: brett.pontarelli.com
 
 environment:
   sdk: ">=2.1.0 <3.0.0"
