@@ -45,9 +45,9 @@ void main() {
       expect(() => encoder.encode(maxPlusOne), throwsArgumentError);
     });
 
-    // test('should error for bad characters', () {
-    //   expect(() => encoder.decode('^'), throwsException);
-    // });
+    test('should error for bad characters', () {
+      expect(() => encoder.decode('^'), throwsArgumentError);
+    });
   });
 
   group('encode/decode', () {
@@ -74,6 +74,7 @@ void main() {
     setUp(() {
       encoder = FixedLengthEncoder();
     });
+
     test('reversible for the min value', () {
       var value = 0;
       var message = encoder.encode(value);
