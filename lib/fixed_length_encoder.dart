@@ -11,11 +11,10 @@ class FixedLengthEncoder {
   String alphabet = DEFAULT_ALPHABET;
   List<int> decodeMap = DEFAULT_DECODE_MAP;
   List<int> encodeMap = DEFAULT_ENCODE_MAP;
-  int length = DEFAULT_LENGTH;
+  int messageLength = DEFAULT_LENGTH;
 
-  get maxValue {
-    return math.pow(alphabet.length, length);
-  }
+  get maxValue => math.pow(alphabet.length, messageLength) - 1;
+  int _direction;
 
   isValidAlphabet() {
     var uniqueList = alphabet.split('').toSet().toList();
@@ -23,26 +22,105 @@ class FixedLengthEncoder {
   }
 
   isValidMap() {
-    var length = math.pow(alphabet.length, 2);
-    var isValid = (encodeMap.length == length) && (decodeMap.length == length);
-    for (var index = 0; index < length; index++) {
+    var mapLength = math.pow(alphabet.length, 2);
+    var isValid = (encodeMap.length == mapLength) && (decodeMap.length == mapLength);
+    for (var index = 0; index < mapLength; index++) {
       if (isValid) isValid = (decodeMap[encodeMap[index]] == index);
     }
     return isValid;
   }
 
-  encode(int value) {
-    var message;
-    if (value < 0) throw('Cannot encode negative values');
-    // this.setup(+1);
-    // if (value >= this.maxValue) throw("Cannot encode ${value} in ${alphabet.length} characters");
-    // value = this.offsetValue(value);
-    // value = this.scrambleValue(value);
-    // message = this.integerToMessage(value);
+  String encode(int value) {
+    String message;
+    if (value < 0) throw ArgumentError('Cannot encode negative values');
+    if (value > maxValue) throw ArgumentError("Cannot encode $value in $messageLength characters");
+    _direction = 1;
+    value = _offsetValue(value);
+    value = _scrambleValue(value);
+    message = _integerToMessage(value);
     return message;
   }
 
-  decode(message) {
+  int decode(String message) {
+    int value;
+    _direction = -1;
+    value = _messageToInteger(message);
+    value = _scrambleValue(value);
+    value = _offsetValue(value);
+    return value;
+  }
 
+  _offsetValue(value) {
+    var maxValuePlusOne = maxValue + 1;
+    var offset = (maxValuePlusOne / 2).floor();
+    value = value + (_direction * offset);
+    if (value < 0) value += maxValuePlusOne;
+    value = value % maxValuePlusOne;
+    return value;
+  }
+
+  _scrambleValue(value) {
+    var digitsList = _integerToDigitsList(value);
+    digitsList = _remapDigits(digitsList);
+    return _digitsListToInteger(digitsList);
+  }
+
+  _remapDigits(digitsList) {
+    var base = alphabet.length;
+    var indexes = _getCircularIndexes();
+    var index, lowIndex, highIndex, mapIndex, mapValue;
+    for (index = 0; index < messageLength; index++) {
+      lowIndex = indexes[index];
+      highIndex = indexes[index + 1];
+      mapIndex = digitsList[highIndex] * base + digitsList[lowIndex];
+      if (_direction > 0) mapValue = encodeMap[mapIndex];
+      if (_direction < 0) mapValue = decodeMap[mapIndex];
+      digitsList[lowIndex] = (mapValue / base).floor();
+      digitsList[highIndex] = mapValue % base;
+    }
+    return digitsList;
+  }
+
+  _getCircularIndexes() {
+    var indexes = List.generate(messageLength + 1, (i) => i % messageLength);
+    if (_direction < 0) indexes = indexes.reversed.toList();
+    return indexes;
+  }
+
+  _integerToMessage(value) {
+    var digitsList = _integerToDigitsList(value);
+    var message = digitsList.map((value) => alphabet[value]).join();
+    return message;
+  }
+
+  _integerToDigitsList(value) {
+    var base = alphabet.length;
+    var digitsList = [];
+    var remainder;
+    while (value > 0 || digitsList.length < messageLength) {
+      remainder = value % base;
+      digitsList.add(remainder);
+      value = (value / base).floor();
+    }
+    return digitsList;
+  }
+
+  _messageToInteger(message) {
+    var digitsList = message.split('').map((character) {
+      var digit = alphabet.indexOf(character);
+      if (digit == -1) throw ArgumentError("Cannot decode an invalid character ($character)");
+      return digit;
+    }).toList();
+    var value = _digitsListToInteger(digitsList);
+    return value;
+  }
+
+  _digitsListToInteger(digitsList) {
+    var base = alphabet.length;
+    var value = 0;
+    digitsList.reversed.forEach((digit) {
+      value = value * base + digit;
+    });
+    return value;
   }
 }
